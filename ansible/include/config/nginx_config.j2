@@ -1,0 +1,24 @@
+server {
+    listen 80;
+    server_name {{ domain_name }};
+
+    {% if ssl_enabled %}
+    listen 443 ssl;
+    ssl_certificate {{ ssl_certificate_path }};
+    ssl_certificate_key {{ ssl_key_path }};
+    {% endif %}
+
+    root /var/www/{{ domain_name }};
+    index index.html index.htm index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass {{ php_socket }};
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
