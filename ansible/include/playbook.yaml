@@ -1,0 +1,49 @@
+---
+- name: Install Nginx and configure site
+  hosts: web_servers
+  become: yes
+
+  vars:
+    domain_name: example.com
+    ssl_enabled: true
+    ssl_certificate_path: /path/to/ssl/certificate.pem
+    ssl_key_path: /path/to/ssl/private-key.pem
+    php_socket: unix:/var/run/php-fpm.sock
+    php_fpm_log_path: /var/log/php-fpm.log
+    php_fpm_worker_count: 4
+
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Create directory for the website
+      file:
+        path: /var/www/{{ domain_name }}
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: 0755
+
+    - name: Generate Nginx config from template
+      template:
+        src: nginx_config.j2
+        dest: /etc/nginx/sites-available/{{ domain_name }}
+      notify:
+        - Reload Nginx
+
+    - name: Enable site
+      file:
+        src: /etc/nginx/sites-available/{{ domain_name }}
+        dest: /etc/nginx/sites-enabled/{{ domain_name }}
+      notify:
+        - Reload Nginx
+
+    - name: Create PHP-FPM config file from template
+      template:
+        src: php_fpm_config.j2
+        dest: /etc/php/{{ php_version }}/fpm/php-fpm.conf
+      notify:
+        - Restart PHP-FPM
+
